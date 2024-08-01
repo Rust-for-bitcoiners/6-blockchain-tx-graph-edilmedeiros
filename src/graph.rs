@@ -74,11 +74,41 @@ impl<T: Eq + PartialEq + Hash> Graph<T> {
     }
 
     pub fn path_exists_between(&self, u: &T, v: &T) -> bool {
-        // Use bfs or dfs
-        // bfs requires a queue data structure refer https://doc.rust-lang.org/std/collections/struct.VecDeque.html
-        // dfs requires recursion
-        // in both cases keep track of visited nodes using HashSet
-        todo!();
+        // trivial: origin or destination are not in the graph
+        if !self.contains_vertex(u) || !self.contains_vertex(v) { return false }
+
+        // trivial: there will always be a path to itself
+        if u == v { return true }
+
+        // we are guaranteed to have u
+        let (start, first_neighbors) = self.edges.get_key_value(u).unwrap();
+
+        let mut visited = HashSet::new();
+        visited.insert(start.clone());
+
+        let mut reachable: VecDeque<Rc<T>> = VecDeque::new();
+        reachable.extend(first_neighbors.iter().map(|n| n.clone()));
+
+        loop {
+            // There is a new candidate vertex to visit
+            if let Some(candidate_edge) = reachable.pop_front() {
+                if *candidate_edge == *v {
+                    // Found destination
+                    return true
+                }
+                // edge is not my destination: add neighbors to reachable list
+                else {
+                    visited.insert(candidate_edge.clone());
+                    let new_neighbors: Vec<_> = self.neighbors(&candidate_edge)
+                        .into_iter()
+                        .filter(|e| !visited.contains(&**e))
+                        .collect();
+                    reachable.extend(new_neighbors);
+                }
+            } else { // There are no more candidate vertices to visit
+                return false
+            }
+        }
     }
 }
 
