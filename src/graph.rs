@@ -40,7 +40,7 @@ impl<T: Eq + PartialEq + Hash> Graph<T> {
     }
 
     pub fn remove_edge(&mut self, u: &T, v: &T) {
-        todo!();
+        self.edges.get_mut(u).map(|h| h.remove(v));
     }
 
     pub fn remove_vertex(&mut self, u: &T) {
