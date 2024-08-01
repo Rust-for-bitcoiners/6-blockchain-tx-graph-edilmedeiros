@@ -29,8 +29,14 @@ impl<T: Eq + PartialEq + Hash> Graph<T> {
     }
 
     pub fn insert_edge(&mut self, u: T, v: T) {
-        // node u can already be in the HashMap or it is not in the HashMap
-        todo!();
+        // node is not present
+        if !self.edges.contains_key(&u) {
+            self.edges.insert(u.into(), HashSet::<Rc<T>>::from([v.into()]));
+        } else { // node is present
+            if let Some(hash_set) = self.edges.get_mut(&u) {
+                hash_set.insert(v.into());
+            }
+        }
     }
 
     pub fn remove_edge(&mut self, u: &T, v: &T) {
@@ -50,7 +56,7 @@ impl<T: Eq + PartialEq + Hash> Graph<T> {
     }
 
     pub fn contains_edge(&mut self, u: &T, v: &T) -> bool {
-        todo!();
+        self.edges.get(u).map_or(false, |h| h.contains(v))
     }
 
     pub fn neighbors(&self, u: &T) -> Vec<Rc<T>> {
