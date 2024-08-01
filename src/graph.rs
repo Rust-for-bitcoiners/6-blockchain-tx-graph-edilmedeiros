@@ -55,7 +55,7 @@ impl<T: Eq + PartialEq + Hash> Graph<T> {
         return false
     }
 
-    pub fn contains_edge(&mut self, u: &T, v: &T) -> bool {
+    pub fn contains_edge(&self, u: &T, v: &T) -> bool {
         self.edges.get(u).map_or(false, |h| h.contains(v))
     }
 
