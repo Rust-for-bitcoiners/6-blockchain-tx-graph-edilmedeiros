@@ -18,7 +18,12 @@ impl<T: Eq + PartialEq + Hash> Graph<T> {
     }
 
     pub fn vertices(&self) -> Vec<Rc<T>> {
-        todo!();
+        let mut vertices: HashSet<Rc<T>> = HashSet::new();
+        for (k, v) in self.edges.iter() {
+            vertices.insert(k.clone());
+            vertices.extend(v.iter().map(|x| x.clone()));
+        }
+        vertices.into_iter().collect()
     }
 
     pub fn insert_vertex(&mut self, u: T) {
@@ -256,7 +261,26 @@ mod tests {
 
         // test no neighbors
         assert_eq!(graph.neighbors(&"Z"), vec![]);
+    }
 
+    #[test]
+    fn vertices() {
+        let mut graph = Graph::new();
+        graph.insert_edge("A", "B");
+        graph.insert_edge("B", "C");
+        graph.insert_edge("C", "D");
+        graph.insert_edge("D", "E");
+        graph.insert_edge("A", "F");
+        graph.insert_edge("F", "G");
+        graph.insert_edge("G", "D");
+
+        let mut dut = graph.vertices();
+        dut.sort();
+        let mut expected = vec![
+            Rc::new("A"), Rc::new("B"), Rc::new("C"), Rc::new("D"),
+            Rc::new("E"), Rc::new("F"), Rc::new("G"), ];
+        expected.sort();
+        assert_eq!(dut, expected);
     }
 
 }
