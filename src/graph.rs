@@ -14,48 +14,106 @@ pub struct Graph<T> {
 
 impl<T: Eq + PartialEq + Hash> Graph<T> {
     pub fn new() -> Graph<T> {
-        todo!();
+        Graph { edges: HashMap::<Rc<T>, HashSet<Rc<T>>>::new(), }
     }
 
     pub fn vertices(&self) -> Vec<Rc<T>> {
-        todo!();
+        let mut vertices: HashSet<Rc<T>> = HashSet::new();
+        for (k, v) in self.edges.iter() {
+            vertices.insert(k.clone());
+            vertices.extend(v.iter().map(|x| x.clone()));
+        }
+        vertices.into_iter().collect()
     }
 
     pub fn insert_vertex(&mut self, u: T) {
-        todo!();
+        // if key is not present, insert key
+        if !self.edges.contains_key(&u) {
+            self.edges.insert(u.into(), HashSet::<Rc<T>>::new());
+        }
     }
 
     pub fn insert_edge(&mut self, u: T, v: T) {
-        // node u can already be in the HashMap or it is not in the HashMap
-        todo!();
+        // node is not present
+        if !self.edges.contains_key(&u) {
+            self.edges.insert(u.into(), HashSet::<Rc<T>>::from([v.into()]));
+        } else { // node is present
+            if let Some(hash_set) = self.edges.get_mut(&u) {
+                hash_set.insert(v.into());
+            }
+        }
     }
 
     pub fn remove_edge(&mut self, u: &T, v: &T) {
-        todo!();
+        self.edges.get_mut(u).map(|h| h.remove(v));
     }
 
     pub fn remove_vertex(&mut self, u: &T) {
-        todo!();
+        self.edges.remove(u);
     }
 
     pub fn contains_vertex(&self, u: &T) -> bool {
-        todo!();
+        for (k, vals) in self.edges.iter() {
+            if **k == *u { return true }
+            else if vals.contains(u) { return true }
+        }
+        return false
     }
 
-    pub fn contains_edge(&mut self, u: &T, v: &T) -> bool {
-        todo!();
+    pub fn contains_edge(&self, u: &T, v: &T) -> bool {
+        self.edges.get(u).map_or(false, |h| h.contains(v))
     }
 
     pub fn neighbors(&self, u: &T) -> Vec<Rc<T>> {
-        todo!();
+        let mut neighbors: Vec<Rc<T>> = Vec::new();
+        for (k, vals) in self.edges.iter() {
+            // target is in the direct path: add all neighbors
+            if **k == *u {
+                vals.iter().for_each(|v| neighbors.push(v.clone()));
+            } else if vals.contains(u) { // target is in the indirect path: add origin
+                neighbors.push(k.clone())
+            }
+
+        }
+        neighbors
     }
 
     pub fn path_exists_between(&self, u: &T, v: &T) -> bool {
-        // Use bfs or dfs
-        // bfs requires a queue data structure refer https://doc.rust-lang.org/std/collections/struct.VecDeque.html
-        // dfs requires recursion
-        // in both cases keep track of visited nodes using HashSet
-        todo!();
+        // trivial: origin or destination are not in the graph
+        if !self.contains_vertex(u) || !self.contains_vertex(v) { return false }
+
+        // trivial: there will always be a path to itself
+        if u == v { return true }
+
+        // we are guaranteed to have u
+        let (start, first_neighbors) = self.edges.get_key_value(u).unwrap();
+
+        let mut visited = HashSet::new();
+        visited.insert(start.clone());
+
+        let mut reachable: VecDeque<Rc<T>> = VecDeque::new();
+        reachable.extend(first_neighbors.iter().map(|n| n.clone()));
+
+        loop {
+            // There is a new candidate vertex to visit
+            if let Some(candidate_edge) = reachable.pop_front() {
+                if *candidate_edge == *v {
+                    // Found destination
+                    return true
+                }
+                // edge is not my destination: add neighbors to reachable list
+                else {
+                    visited.insert(candidate_edge.clone());
+                    let new_neighbors: Vec<_> = self.neighbors(&candidate_edge)
+                        .into_iter()
+                        .filter(|e| !visited.contains(&**e))
+                        .collect();
+                    reachable.extend(new_neighbors);
+                }
+            } else { // There are no more candidate vertices to visit
+                return false
+            }
+        }
     }
 }
 
@@ -168,5 +226,62 @@ mod tests {
         assert!(graph.contains_vertex(&"B"));
         assert!(graph.contains_vertex(&"C"));
     }
+
+    #[test]
+    fn neighbors() {
+        let mut graph = Graph::new();
+        graph.insert_edge("A", "B");
+        graph.insert_edge("B", "C");
+        graph.insert_edge("C", "D");
+        graph.insert_edge("D", "E");
+        graph.insert_edge("A", "F");
+        graph.insert_edge("F", "G");
+        graph.insert_edge("G", "D");
+
+        // test direct path: A -> B and A ->F
+        let mut dut = graph.neighbors(&"A");
+        dut.sort();
+        let mut expected = vec![Rc::new("B"), Rc::new("F")];
+        expected.sort();
+        assert_eq!(dut, expected);
+
+        // test direct and indirect path: A -> B, B -> C
+        let mut dut = graph.neighbors(&"B");
+        dut.sort();
+        let mut expected = vec![Rc::new("A"), Rc::new("C")];
+        expected.sort();
+        assert_eq!(dut, expected);
+
+        // test indirect path: D -> E
+        let mut dut = graph.neighbors(&"E");
+        dut.sort();
+        let mut expected = vec![Rc::new("D")];
+        expected.sort();
+        assert_eq!(dut, expected);
+
+        // test no neighbors
+        assert_eq!(graph.neighbors(&"Z"), vec![]);
+    }
+
+    #[test]
+    fn vertices() {
+        let mut graph = Graph::new();
+        graph.insert_edge("A", "B");
+        graph.insert_edge("B", "C");
+        graph.insert_edge("C", "D");
+        graph.insert_edge("D", "E");
+        graph.insert_edge("A", "F");
+        graph.insert_edge("F", "G");
+        graph.insert_edge("G", "D");
+
+        let mut dut = graph.vertices();
+        dut.sort();
+        let mut expected = vec![
+            Rc::new("A"), Rc::new("B"), Rc::new("C"), Rc::new("D"),
+            Rc::new("E"), Rc::new("F"), Rc::new("G"), ];
+        expected.sort();
+        assert_eq!(dut, expected);
+    }
+
 }
 
