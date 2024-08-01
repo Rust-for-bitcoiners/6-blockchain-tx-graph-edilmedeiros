@@ -60,7 +60,17 @@ impl<T: Eq + PartialEq + Hash> Graph<T> {
     }
 
     pub fn neighbors(&self, u: &T) -> Vec<Rc<T>> {
-        todo!();
+        let mut neighbors: Vec<Rc<T>> = Vec::new();
+        for (k, vals) in self.edges.iter() {
+            // target is in the direct path: add all neighbors
+            if **k == *u {
+                vals.iter().for_each(|v| neighbors.push(v.clone()));
+            } else if vals.contains(u) { // target is in the indirect path: add origin
+                neighbors.push(k.clone())
+            }
+
+        }
+        neighbors
     }
 
     pub fn path_exists_between(&self, u: &T, v: &T) -> bool {
@@ -181,5 +191,43 @@ mod tests {
         assert!(graph.contains_vertex(&"B"));
         assert!(graph.contains_vertex(&"C"));
     }
+
+    #[test]
+    fn neighbors() {
+        let mut graph = Graph::new();
+        graph.insert_edge("A", "B");
+        graph.insert_edge("B", "C");
+        graph.insert_edge("C", "D");
+        graph.insert_edge("D", "E");
+        graph.insert_edge("A", "F");
+        graph.insert_edge("F", "G");
+        graph.insert_edge("G", "D");
+
+        // test direct path: A -> B and A ->F
+        let mut dut = graph.neighbors(&"A");
+        dut.sort();
+        let mut expected = vec![Rc::new("B"), Rc::new("F")];
+        expected.sort();
+        assert_eq!(dut, expected);
+
+        // test direct and indirect path: A -> B, B -> C
+        let mut dut = graph.neighbors(&"B");
+        dut.sort();
+        let mut expected = vec![Rc::new("A"), Rc::new("C")];
+        expected.sort();
+        assert_eq!(dut, expected);
+
+        // test indirect path: D -> E
+        let mut dut = graph.neighbors(&"E");
+        dut.sort();
+        let mut expected = vec![Rc::new("D")];
+        expected.sort();
+        assert_eq!(dut, expected);
+
+        // test no neighbors
+        assert_eq!(graph.neighbors(&"Z"), vec![]);
+
+    }
+
 }
 
