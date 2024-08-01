@@ -44,7 +44,7 @@ impl<T: Eq + PartialEq + Hash> Graph<T> {
     }
 
     pub fn remove_vertex(&mut self, u: &T) {
-        todo!();
+        self.edges.remove(u);
     }
 
     pub fn contains_vertex(&self, u: &T) -> bool {
