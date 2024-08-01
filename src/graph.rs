@@ -22,7 +22,10 @@ impl<T: Eq + PartialEq + Hash> Graph<T> {
     }
 
     pub fn insert_vertex(&mut self, u: T) {
-        todo!();
+        // if key is not present, insert key
+        if !self.edges.contains_key(&u) {
+            self.edges.insert(u.into(), HashSet::<Rc<T>>::new());
+        }
     }
 
     pub fn insert_edge(&mut self, u: T, v: T) {
@@ -39,7 +42,11 @@ impl<T: Eq + PartialEq + Hash> Graph<T> {
     }
 
     pub fn contains_vertex(&self, u: &T) -> bool {
-        todo!();
+        for (k, vals) in self.edges.iter() {
+            if **k == *u { return true }
+            else if vals.contains(u) { return true }
+        }
+        return false
     }
 
     pub fn contains_edge(&mut self, u: &T, v: &T) -> bool {
