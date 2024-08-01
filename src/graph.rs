@@ -14,7 +14,7 @@ pub struct Graph<T> {
 
 impl<T: Eq + PartialEq + Hash> Graph<T> {
     pub fn new() -> Graph<T> {
-        todo!();
+        Graph { edges: HashMap::<Rc<T>, HashSet<Rc<T>>>::new(), }
     }
 
     pub fn vertices(&self) -> Vec<Rc<T>> {
